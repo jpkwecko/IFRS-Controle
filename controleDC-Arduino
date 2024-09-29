@@ -1,0 +1,77 @@
+int voltas = 0;
+int rpm = 0;
+int valor = 0;
+
+int set_point = 300;
+int erro = 0;
+int erroTot = 0;
+int erroUlt = 0;
+
+//ZeN
+//float kp = 0.0.21;
+//float ki = 0.0.1217;
+//float kd = 0.0543;
+//TeL
+float kp = 0.159;
+float ki = 0.0349;
+float kd = 0.0521;
+
+float pid_c = 0;
+float x = 0;
+unsigned long tempo = millis();
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(2, INPUT);
+  pinMode(6, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(4, OUTPUT);
+  Serial.begin(9600);
+  attachInterrupt(digitalPinToInterrupt(2),motor,RISING);  
+  digitalWrite(4, HIGH);
+  analogWrite(6, 0);
+
+  analogWrite(5, 255);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  if(millis()- tempo >= 1000) {
+    rpm = voltas / 6 * 60;
+    //Serial.print("Rotações Por Minuto= ");
+    Serial.println(rpm);
+    voltas = 0;
+    tempo = millis();
+
+    erro = set_point - rpm;
+   
+    //Serial.print("Erro = ");
+
+    erroTot = erroTot + erro;
+    pid_c = kp * erro + ki * erroTot + (erro-erroUlt)/1*kd;
+    erroUlt = erro;
+   
+   if(pid_c > 255){
+    pid_c = 255;
+   }
+   else if(pid_c < 0) {
+    pid_c = 0;
+   }
+   
+    analogWrite(5, pid_c);
+  }
+
+  if (Serial.available() > 0) {
+    x = Serial.parseInt();
+    if(x > 0 and x < 540) {
+      set_point = x;
+    }
+  }
+
+}
+
+void motor(){
+  voltas++;
+ 
+}
